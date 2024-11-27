@@ -21,7 +21,7 @@ async function getExistingParameters(ssmClient: SSMClient, env: 'dev'|'prod', pa
     const response = await ssmClient.send(command);
     response.Parameters?.forEach(param => {
       if (param.Name && param.Value) {
-        parameters.set(param.Name.slice(1), param.Value);
+        parameters.set(param.Name.split('/').slice(2).join('/'), param.Value);
       }
     });
 
