@@ -1,5 +1,7 @@
 {
   "dependencies": {
+    "@1password/connect": "^1.4.1",
+    "@aws-sdk/client-ssm": "^3.699.0",
     "@types/node": "^22.10.0"
   }
 }
