@@ -4,5 +4,8 @@
     "@aws-sdk/client-ssm": "^3.699.0",
     "@types/node": "^22.10.0",
     "serverless": "^4.4.12"
+  },
+  "scripts": {
+    "deploy": "tsc --build && serverless deploy"
   }
 }

@@ -39,18 +39,18 @@ async function syncSendgridTemplateIdsByEnvironment(env: 'dev'|'prod', ssmClient
   const itemId = process.env[`${env.toUpperCase()}_SENDGRID_ITEM_ID`]!;
   
   const item = await onepasswordClient.items.get(vaultId, itemId);
-  const notesField = item.fields?.find(field => field.title === 'notesPlain');
+  const textField = item.fields?.find(field => field.title == 'text');
 
-  if (!notesField?.value) {
-    throw new Error('Notes field not found or empty');
+  if (!textField?.value) {
+    throw new Error('Text value not found or empty');
   }
 
-  const onePasswordParameters = JSON.parse(notesField.value) as Record<string, string>;
+  const onePasswordParameters = JSON.parse(textField.value) as Record<string, string>;
 
   for (const [key, value] of Object.entries(onePasswordParameters)) {
     try {
       await ssmClient.send(new PutParameterCommand({
-        Name: `/${key}`,
+        Name: `/${env}/sendgrid_template_ids/${key}`,
         Value: value,
         Type: 'String',
         Overwrite: true
@@ -83,7 +83,7 @@ async function sync() {
     integrationVersion: "1.0.0",
   });
   
-  const ssmClient = new SSMClient({ region: process.env.AWS_REGION });
+  const ssmClient = new SSMClient({ region: 'us-east-1' });
 
   await syncSendgridTemplateIdsByEnvironment('dev', ssmClient, onepasswordClient);
   await syncSendgridTemplateIdsByEnvironment('prod', ssmClient, onepasswordClient);

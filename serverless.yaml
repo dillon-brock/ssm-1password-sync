@@ -1,6 +1,6 @@
 service: parameter-store-sync
 
-frameworkVersion: '3'
+frameworkVersion: '4'
 
 provider:
   name: aws
@@ -15,9 +15,12 @@ provider:
             - ssm:PutParameter
             - ssm:DeleteParameter
             - ssm:GetParameter
+            - ssm:GetParametersByPath
           Resource: 
             - arn:aws:ssm:${aws:region}:${aws:accountId}:parameter/dev/sendgrid_template_ids/*
+            - arn:aws:ssm:${aws:region}:${aws:accountId}:parameter/dev/sendgrid_template_ids
             - arn:aws:ssm:${aws:region}:${aws:accountId}:parameter/prod/sendgrid_template_ids/*
+            - arn:aws:ssm:${aws:region}:${aws:accountId}:parameter/prod/sendgrid_template_ids
 
 functions:
   sync:
@@ -28,6 +31,5 @@ functions:
       DEV_SENDGRID_ITEM_ID: ${env:DEV_SENDGRID_ITEM_ID}
       PROD_SENDGRID_ITEM_ID: ${env:PROD_SENDGRID_ITEM_ID}
       OP_SERVICE_ACCOUNT_TOKEN: ${env:OP_SERVICE_ACCOUNT_TOKEN}
-      AWS_REGION: ${self:provider.region}
     events:
       - schedule: rate(5 minutes)
