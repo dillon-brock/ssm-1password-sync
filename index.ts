@@ -1,4 +1,4 @@
-import { OPConnect } from '@1password/connect';
+import { createClient } from '@1password/sdk';
 import { 
   SSMClient, 
   PutParameterCommand, 
@@ -31,42 +31,45 @@ async function getExistingParameters(ssmClient: SSMClient, env: 'dev'|'prod', pa
   return parameters;
 }
 
-async function syncSendgridTemplateIdsByEnvironment(env: 'dev'|'prod', ssmClient: SSMClient, connectClient: OPConnect) {
+async function syncSendgridTemplateIdsByEnvironment(env: 'dev'|'prod', ssmClient: SSMClient, onepasswordClient: Awaited<ReturnType<typeof createClient>>) {
   console.log(`Starting parameter sync for ${env}`);
   const existingParameters = await getExistingParameters(ssmClient, env, 'sendgrid_template_ids');
 
-  const item = await connectClient.getItemById(process.env[`${env.toUpperCase()}_SENDGRID_VAULT_ID`]!, process.env[`${env.toUpperCase()}_SENDGRID_ITEM_ID`]!);
-  const notesField = item.fields?.find(f => f.label === 'notesPlain');
+  const vaultId = process.env[`${env.toUpperCase()}_SENDGRID_VAULT_ID`]!;
+  const itemId = process.env[`${env.toUpperCase()}_SENDGRID_ITEM_ID`]!;
+  
+  const item = await onepasswordClient.items.get(vaultId, itemId);
+  const notesField = item.fields?.find(field => field.title === 'notesPlain');
 
   if (!notesField?.value) {
-      throw new Error('Notes field not found or empty');
+    throw new Error('Notes field not found or empty');
   }
 
   const onePasswordParameters = JSON.parse(notesField.value) as Record<string, string>;
 
   for (const [key, value] of Object.entries(onePasswordParameters)) {
-      try {
+    try {
       await ssmClient.send(new PutParameterCommand({
-          Name: `/${key}`,
-          Value: value,
-          Type: 'String',
-          Overwrite: true
+        Name: `/${key}`,
+        Value: value,
+        Type: 'String',
+        Overwrite: true
       }));
       console.log(`Successfully updated ${key}`);
       existingParameters.delete(key);
-      } catch (error) {
+    } catch (error) {
       console.error(`Failed to update ${key}:`, error);
-      }
+    }
   }
 
   for (const [key] of existingParameters) {
     try {
-    await ssmClient.send(new DeleteParameterCommand({
-      Name: `/${key}`
-    }));
-    console.log(`Successfully deleted ${key} (not found in 1Password)`);
+      await ssmClient.send(new DeleteParameterCommand({
+        Name: `/${key}`
+      }));
+      console.log(`Successfully deleted ${key} (not found in 1Password)`);
     } catch (error) {
-    console.error(`Failed to delete ${key}:`, error);
+      console.error(`Failed to delete ${key}:`, error);
     }
   }
 }
@@ -74,15 +77,16 @@ async function syncSendgridTemplateIdsByEnvironment(env: 'dev'|'prod', ssmClient
 async function sync() {
   console.log('Starting parameter sync');
 
-  const connectClient = new OPConnect({
-    serverURL: '',
-    token: '',
+  const onepasswordClient = await createClient({
+    auth: process.env.OP_SERVICE_ACCOUNT_TOKEN!,
+    integrationName: "sendgrid-template-sync",
+    integrationVersion: "1.0.0",
   });
   
   const ssmClient = new SSMClient({ region: process.env.AWS_REGION });
 
-  await syncSendgridTemplateIdsByEnvironment('dev', ssmClient, connectClient);
-  await syncSendgridTemplateIdsByEnvironment('prod', ssmClient, connectClient);
+  await syncSendgridTemplateIdsByEnvironment('dev', ssmClient, onepasswordClient);
+  await syncSendgridTemplateIdsByEnvironment('prod', ssmClient, onepasswordClient);
 }
 
 export const handler = async () => {

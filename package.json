@@ -1,7 +1,8 @@
 {
   "dependencies": {
-    "@1password/connect": "^1.4.1",
+    "@1password/sdk": "^0.1.4",
     "@aws-sdk/client-ssm": "^3.699.0",
-    "@types/node": "^22.10.0"
+    "@types/node": "^22.10.0",
+    "serverless": "^4.4.12"
   }
 }
