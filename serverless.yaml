@@ -23,7 +23,7 @@ provider:
             - arn:aws:ssm:${aws:region}:${aws:accountId}:parameter/prod/sendgrid_template_ids
 
 functions:
-  sync:
+  main:
     handler: dist/index.handler
     environment:
       DEV_SENDGRID_VAULT_ID: ${env:DEV_SENDGRID_VAULT_ID}
